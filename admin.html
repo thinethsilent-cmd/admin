@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crash LK | Operations Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+        
+        :root {
+            --bg: #030712;
+            --surface: #111827;
+            --accent: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: #f8fafc;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.25rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #020617;
+            font-weight: 800;
+            text-transform: uppercase;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .input-dark {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: white;
+            outline: none;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Auth System -->
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-[#020617] flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md p-10 shadow-2xl border-emerald-500/20">
+            <div class="text-center mb-10">
+                <i class="fas fa-user-shield text-emerald-500 text-4xl mb-4"></i>
+                <h1 class="text-3xl font-black italic uppercase tracking-tighter">Ops <span class="text-emerald-500">Access</span></h1>
+            </div>
+            
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-5">
+                <div>
+                    <label class="text-[10px] uppercase font-black text-slate-500 ml-1">Admin Email</label>
+                    <input type="email" id="auth-email" required class="input-dark w-full mt-1" placeholder="admin@crash.lk">
+                </div>
+                <div>
+                    <label class="text-[10px] uppercase font-black text-slate-500 ml-1">Access Pin</label>
+                    <input type="password" id="auth-password" required class="input-dark w-full mt-1" placeholder="••••••••">
+                </div>
+                <button type="submit" class="w-full py-4 btn-primary rounded-2xl text-lg">Enter Dashboard</button>
+            </form>
+            <p class="text-[10px] font-bold text-slate-500 text-center mt-6">Use any email containing "admin" to demo</p>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="w-full md:w-64 bg-gray-950/80 border-r border-white/5 flex flex-col z-50">
+        <div class="p-6 border-b border-white/5">
+            <span class="text-2xl font-black italic uppercase tracking-tighter">Ops<span class="text-emerald-500">Panel</span></span>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchView('deposits')" id="btn-nav-deposits" class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-black uppercase transition-all bg-emerald-500 text-black">Deposits</button>
+            <button onclick="switchView('withdrawals')" id="btn-nav-withdrawals" class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-black uppercase transition-all text-slate-400 hover:bg-white/5">Withdrawals</button>
+        </nav>
+        <div class="p-4 border-t border-white/5">
+            <button onclick="handleSignOut()" class="w-full py-3 bg-red-500/10 text-red-500 rounded-xl font-bold uppercase text-xs hover:bg-red-500 hover:text-white transition-all">Sign Out</button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-[#020617] to-[#0f172a]">
+        
+        <!-- Deposits View -->
+        <div id="view-deposits" class="view-content block">
+            <h2 class="text-2xl font-black uppercase mb-6 flex items-center gap-3">
+                <i class="fas fa-hand-holding-dollar text-emerald-500"></i> Pending Deposits
+            </h2>
+            <div id="deposits-list" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Injected -->
+            </div>
+        </div>
+
+        <!-- Withdrawals View -->
+        <div id="view-withdrawals" class="view-content hidden">
+            <h2 class="text-2xl font-black uppercase mb-6 flex items-center gap-3">
+                <i class="fas fa-money-bill-transfer text-emerald-500"></i> Pending Settlements
+            </h2>
+            <div id="withdrawals-list" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Injected -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-10 right-10 z-[300] px-6 py-4 glass-panel border-emerald-500/40 transition-all translate-y-20 opacity-0 pointer-events-none flex items-center gap-3">
+        <i class="fas fa-info-circle text-emerald-400 text-xl"></i>
+        <p id="toast-msg" class="text-sm font-bold text-white"></p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAu2rosyyF2AJi_hVo-8XhXGsofTJ9zzdQ",
+            authDomain: "myapp-1bc82.firebaseapp.com",
+            projectId: "myapp-1bc82",
+            appId: "1:723618358633:web:24c6a343707c53de7009f8"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const DB_ID = "crash-lk-enterprise-v1";
+
+        let user = null;
+        let depositsUnsub = null;
+        let withdrawalsUnsub = null;
+
+        const $ = id => document.getElementById(id);
+
+        function showToast(msg) {
+            $('toast-msg').innerText = msg;
+            $('toast').classList.remove('translate-y-20', 'opacity-0');
+            $('toast').classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                $('toast').classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        window.switchView = (v) => {
+            document.querySelectorAll('.view-content').forEach(el => el.classList.remove('block'));
+            document.querySelectorAll('.view-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.className = "nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-black uppercase transition-all text-slate-400 hover:bg-white/5");
+            $(`view-${v}`).classList.remove('hidden');
+            $(`view-${v}`).classList.add('block');
+            $(`btn-nav-${v}`).className = "nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-black uppercase transition-all bg-emerald-500 text-black";
+        };
+
+        onAuthStateChanged(auth, u => {
+            user = u;
+            if (u && u.email && u.email.includes('admin')) {
+                $('auth-screen').classList.remove('flex');
+                $('auth-screen').classList.add('hidden');
+                initListeners();
+            } else {
+                $('auth-screen').classList.remove('hidden');
+                $('auth-screen').classList.add('flex');
+                if(depositsUnsub) depositsUnsub();
+                if(withdrawalsUnsub) withdrawalsUnsub();
+                if(u) handleSignOut(); // Sign out non-admins
+            }
+        });
+
+        window.handleAuth = async (e) => {
+            e.preventDefault();
+            const email = $('auth-email').value;
+            const pass = $('auth-password').value;
+            if(!email.includes("admin")) { showToast("Admin access only"); return; }
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (err) {
+                // For demo purposes, create the admin account if it doesn't exist
+                try {
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                } catch(e) { showToast(e.message); }
+            }
+        };
+
+        window.handleSignOut = () => signOut(auth);
+
+        function initListeners() {
+            // Deposits Listener
+            const depQ = query(collection(db, 'artifacts', DB_ID, 'public', 'data', 'deposits'), where('status', '==', 'pending'));
+            depositsUnsub = onSnapshot(depQ, (snapshot) => {
+                const list = $('deposits-list');
+                list.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const el = document.createElement('div');
+                    el.className = 'glass-panel p-6 flex flex-col gap-4';
+                    el.innerHTML = `
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Req ID</span>
+                            <span class="text-[10px] font-mono text-emerald-400">${docSnap.id}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">User Email</span>
+                            <span class="text-xs font-bold text-white">${data.email || data.uid}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Amount</span>
+                            <span class="text-2xl font-black text-emerald-500">LKR ${data.amount.toLocaleString()}</span>
+                        </div>
+                        <div class="flex gap-3 mt-2">
+                            <button onclick="resolveDeposit('${docSnap.id}', 'approved')" class="flex-1 py-3 bg-emerald-500 text-black font-black uppercase text-xs rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:brightness-110">Approve</button>
+                            <button onclick="resolveDeposit('${docSnap.id}', 'rejected')" class="py-3 px-6 bg-red-500/10 text-red-500 font-black uppercase text-xs rounded-xl hover:bg-red-500 hover:text-white transition-all">Reject</button>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+                if(list.children.length === 0) list.innerHTML = `<p class="text-slate-500 text-sm font-bold p-6">No pending deposits.</p>`;
+            });
+
+            // Withdrawals Listener
+            const witQ = query(collection(db, 'artifacts', DB_ID, 'public', 'data', 'withdrawals'), where('status', '==', 'pending'));
+            withdrawalsUnsub = onSnapshot(witQ, (snapshot) => {
+                const list = $('withdrawals-list');
+                list.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const el = document.createElement('div');
+                    el.className = 'glass-panel p-6 flex flex-col gap-4 border border-blue-500/20';
+                    el.innerHTML = `
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Req ID</span>
+                            <span class="text-[10px] font-mono text-blue-400">${docSnap.id}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">User</span>
+                            <span class="text-xs font-bold text-white">${data.email || data.uid}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Amount</span>
+                            <span class="text-2xl font-black text-blue-500">LKR ${data.amount.toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Bank</span>
+                            <span class="text-[10px] font-bold text-white">${data.bankName}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Account No</span>
+                            <code class="text-[10px] font-bold text-emerald-400">${data.bankNo}</code>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Account Name</span>
+                            <span class="text-[10px] font-bold text-slate-300">${data.fullName}</span>
+                        </div>
+                        <div class="flex gap-3 mt-2">
+                            <button onclick="resolveWithdrawal('${docSnap.id}', '${data.uid}', ${data.amount}, 'completed')" class="flex-1 py-3 bg-blue-500 text-white font-black uppercase text-xs rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:brightness-110">Approve & Send</button>
+                            <button onclick="resolveWithdrawal('${docSnap.id}', '${data.uid}', ${data.amount}, 'rejected')" class="py-3 px-6 bg-red-500/10 text-red-500 font-black uppercase text-xs rounded-xl hover:bg-red-500 hover:text-white transition-all">Reject</button>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+                if(list.children.length === 0) list.innerHTML = `<p class="text-slate-500 text-sm font-bold p-6">No pending settlements.</p>`;
+            });
+        }
+
+        // Resolvers
+        window.resolveDeposit = async (id, status) => {
+            const ref = doc(db, 'artifacts', DB_ID, 'public', 'data', 'deposits', id);
+            await updateDoc(ref, { status });
+            showToast(`Deposit ${status}`);
+        };
+
+        window.resolveWithdrawal = async (id, uid, amount, status) => {
+            const ref = doc(db, 'artifacts', DB_ID, 'public', 'data', 'withdrawals', id);
+            await updateDoc(ref, { status });
+            
+            if (status === 'rejected') {
+                // Return funds
+                const userRef = doc(db, 'artifacts', DB_ID, 'users', uid, 'profile', 'data');
+                await updateDoc(userRef, { balance: increment(amount) });
+                showToast(`Settlement rejected. LKR ${amount} refunded.`);
+            } else {
+                showToast(`Settlement approved.`);
+            }
+        };
+    </script>
+</body>
+</html>
